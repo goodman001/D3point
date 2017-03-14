@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>viz1</title>
+	<style> /* set the CSS */
+	body { font: 12px Arial;}
+	path { 
+		stroke: #8E8E8E;
+		stroke-width: 2;
+		fill: none;
+	}
+	.axis path,
+	.axis line {
+		fill: none;
+		stroke: grey;
+		stroke-width: 1;
+		shape-rendering: crispEdges;
+	}
+	</style>
+	<script src="http://d3js.org/d3.v3.min.js"></script>
+</head>
+<body>
+<script>
+d3.xhr("viz1.csv").get(function (error, response) {
+	var dirtyCSV = response.responseText;
+	//console.log(dirtyCSV);
+	var cleanCSV = dirtyCSV.split('\n').slice(0).join('\n');
+	var data = d3.csv.parse(cleanCSV)
+	//console.log(data);
+	//retrieve title
+	var dirtyTitle = dirtyCSV.split('\n').slice(0,1).join('\n');
+	var title = dirtyTitle.slice(0,-1);
+	//get variable names
+	var keys = d3.keys(data[0]);
+	var namesTitle = keys[0];
+	var valuesTitle = keys[1];
+	//accessing the properties of each object with the variable name through its key
+	var values = function(d) {return +d[valuesTitle];};
+	var names = function(d) {return d[namesTitle];};
+	var dataSet = [];
+	//var cell=new Array(2);
+	for(var i=0;i<data.length;i++){
+		//cell["legendLabel"] = data[i][namesTitle];
+		//cell["magnitude"] = (data[i][valuesTitle]);
+		//console.log(data[i]);
+		dataSet[i]={"creat_time":data[i][namesTitle], "magnitude":data[i][valuesTitle]};
+	}
+	console.log(dataSet);
+	
+	
+	var data = dataSet;
+    var margin = {top:80, right: 25, bottom: 40, left: 100};
+    var width = 960 - margin.left - margin.right;
+    var height = 500 - margin.top - margin.bottom;
+    var parseDate = d3.time.format("%H").parse;
+    var x = d3.time.scale()
+        .range([0, width]);
+
+    var y = d3.scale.linear()
+        .range([height, 0]);
+
+    var xAxis = d3.svg.axis()
+        .scale(x)
+        .orient("bottom")
+		.tickFormat(d3.time.format("%H"))
+		.ticks(24);
+
+    var yAxis = d3.svg.axis()
+        .scale(y)
+        .orient("left")
+		.ticks(9);
+
+    var line = d3.svg.line()
+        .x(function(d) { return x(d.creat_time); })
+        .y(function(d) { return y(d.magnitude); });
+
+
+    var svg = d3.select("body").append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    data.forEach(function(d) {
+        d.creat_time = parseDate(d.creat_time);
+        d.magnitude = +d.magnitude;
+    });
+
+    x.domain(d3.extent(data, function(d) { return d.creat_time; }));
+    y.domain(d3.extent(data, function(d) { return d.magnitude;}));
+	svg.append("text")
+		.attr("x",0)
+		.attr("y", -70)
+		.attr("dy", "0.35em")
+		.attr("text-anchor", "left")
+		.attr("font-family", "sans-serif")
+		.attr("font-size", "5px")
+		.text("Caption:For the first visulization, it clearly shows that the peak time of accident happened is around 17:00 to 19:00. It also shows an upward trend of accidents happened from 5:00 to 19:00. It's meaningfor to connect these dots, so I choose to use line chart to show the trend of happened accidents. However it's hard see the category features. -Lan Yu")
+		.call(wrap, width,-60);
+		//
+	//chart caption
+	svg.append("text")
+		.attr("x", -60)
+		.attr("y", -20 )
+		.attr("dy", "0.35em")
+		.attr("text-anchor", "left")
+		.attr("font-family", "sans-serif")
+		.attr("font-size", "20px")
+		.attr("font-weight", "bold")
+		.attr("fill", "black")
+		.text("Time vs. Number of Incidents");
+    svg.append("g")
+		.attr("class", "x axis")
+		.attr("transform", "translate(0," + height + ")")
+		.call(xAxis)
+		.append("text")
+		.attr("y",25)
+		.attr("x",  width/2)
+		.attr("dy", ".71em")
+		.style("text-anchor", "middle")
+		.style("font", "bold 12px Arial")
+		.text("Hour of Time");
+    svg.append("g")
+		.attr("class", "y axis")
+		.call(yAxis)
+		.append("text")
+		.attr("transform", "rotate(-90)")
+		.attr("y", -50)
+		.attr("x", height*(-0.5))
+		.attr("dy", ".71em")
+		.style("text-anchor", "middle")
+		.style("font", "bold 12px Arial")
+		.text("Number of Records");
+
+    svg.append("path")
+		.datum(data)
+		.attr("class", "line")
+		.attr("d", line);
+	svg.selectAll('circle')
+		.data(data)
+		.enter()
+		.append('circle')
+		.attr('cx', function(d) {return x(d.creat_time); })
+		.attr('cy', function(d) {return y(d.magnitude); })
+		.attr('r',2)
+		.attr('fill', function(d, i) {
+		  return "black";
+		});
+	svg.append('g')
+		.selectAll('text')
+        .data(data)
+        .enter().append('text')
+		.classed('label', true)
+        .attr("x", function(d) {return x(d.creat_time)+15; })
+        .attr("y", function(d, i) { if(i>=7){return y(d.magnitude)+15;}
+									else{return y(d.magnitude);} })
+        .style("text-anchor", "middle")
+        .text(function(d) { return d.magnitude; })
+});
+function wrap(text, width,left) {
+  text.each(function() {
+    var text = d3.select(this),
+        words = text.text().split(/\s+/).reverse(),
+        word,
+        line = [],
+        lineNumber = 0,
+        lineHeight = 3, // ems
+        y = text.attr("y"),
+        dy = parseFloat(text.attr("dy")),
+        tspan = text.text(null).append("tspan").attr("x",left).attr("y", y).attr("dy", dy + "em");
+    while (word = words.pop()) {
+      line.push(word);
+      tspan.text(line.join(" "));
+      if (tspan.node().getComputedTextLength() > width) {
+        line.pop();
+        tspan.text(line.join(" "));
+        line = [word];
+        tspan = text.append("tspan").attr("x",left).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>

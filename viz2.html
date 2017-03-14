@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>    
+<meta charset="utf-8">
+<title>viz2</title>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<style type="text/css">
+	.slice text {
+		font-size: 8pt;
+		font-family: Arial;
+	}   
+</style>
+</head>
+<body style="margin-left:100px">
+    <script type="text/javascript">
+
+	var canvasWidth = 600, //width
+	canvasHeight = 600,   //height
+	outerRadius = 200,   //radius
+	color = d3.scale.category20(); //builtin range of colors
+	d3.xhr("viz2.csv").get(function (error, response) {
+		var dirtyCSV = response.responseText;
+		//console.log(dirtyCSV);
+		var cleanCSV = dirtyCSV.split('\n').slice(0).join('\n');
+		var data = d3.csv.parse(cleanCSV)
+		//console.log(data);
+		//retrieve title
+		var dirtyTitle = dirtyCSV.split('\n').slice(0,1).join('\n');
+		var title = dirtyTitle.slice(0,-1);
+		//get variable names
+		var keys = d3.keys(data[0]);
+		var namesTitle = keys[0];
+		var valuesTitle = keys[1];
+		//accessing the properties of each object with the variable name through its key
+		var values = function(d) {return +d[valuesTitle];};
+		var names = function(d) {return d[namesTitle];};
+		var dataSet = [];
+		//var cell=new Array(2);
+		for(var i=0;i<data.length;i++){
+			//cell["legendLabel"] = data[i][namesTitle];
+			//cell["magnitude"] = (data[i][valuesTitle]);
+			//console.log(data[i]);
+			dataSet[i]={"legendLabel":data[i][namesTitle], "magnitude":data[i][valuesTitle]};
+		}
+		
+    
+    var vis = d3.select("body")
+		.append("svg:svg") //create the SVG element inside the <body>
+		.data([dataSet]) //associate our data with the document
+		.attr("width", canvasWidth + 20) //set the width of the canvas
+		.attr("height", canvasHeight + 20) //set the height of the canvas
+		.append("svg:g") //make a group to hold our pie chart
+		.attr("transform", "translate(" + 1.5*outerRadius + "," + 1.5*outerRadius + ")") // relocate center of pie to 'outerRadius,outerRadius'
+    // This will create <path> elements for us using arc data...
+    var arc = d3.svg.arc()
+      .outerRadius(outerRadius);
+    var pie = d3.layout.pie() //this will create arc data for us given a list of values
+      .value(function(d) { return d.magnitude; }) // Binding each value to the pie
+      .sort( function(d) { return null; } );
+    // Select all <g> elements with class slice (there aren't any yet)
+    var arcs = vis.selectAll("g.slice")
+		// Associate the generated pie data (an array of arcs, each having startAngle,
+		// endAngle and value properties) 
+		.data(pie)
+		// This will create <g> elements for every "extra" data element that should be associated
+		// with a selection. The result is creating a <g> for every object in the data array
+		.enter()
+		// Create a group to hold each slice (we will have a <path> and a <text>
+		// element associated with each slice)
+		.append("svg:g")
+		.attr("class", "slice");    //allow us to style things in the slices (like text)
+    arcs.append("svg:path")
+		//set the color for each slice to be chosen from the color function defined above
+		.attr("fill", function(d, i) { return color(i); } )
+		//this creates the actual SVG path using the associated data (pie) with the arc drawing function
+		.attr("d", arc);
+    // Add a legendLabel to each arc slice...
+    arcs.append("svg:text")
+		.attr("transform", function(d) { //set the label's origin to the center of the arc
+			//we have to make sure to set these before calling arc.centroid
+			d.outerRadius = outerRadius + 45; // Set Outer Coordinate
+			d.innerRadius = outerRadius + 60; // Set Inner Coordinate
+			return "translate(" + arc.centroid(d) + ")";})
+		.attr("text-anchor", "middle") //center the text on it's origin
+		.style("fill", "Purple")
+		.style("font", "7px Arial")
+		.text(function(d, i) { return dataSet[i].legendLabel; }); //get the label from our original data array   
+    // Add a magnitude value to the larger arcs, translated to the arc centroid and rotated.
+    arcs.filter(function(d) { return d.endAngle - d.startAngle > .2; }).append("svg:text")
+		.attr("dy", ".35em")
+		.attr("text-anchor", "middle")
+		//.attr("transform", function(d) { return "translate(" + arc.centroid(d) + ")rotate(" + angle(d) + ")"; })
+		.attr("transform", function(d) { //set the label's origin to the center of the arc
+		//we have to make sure to set these before calling arc.centroid
+		d.outerRadius = outerRadius +45; // Set Outer Coordinate
+		d.innerRadius = outerRadius/5 + 100; // Set Inner Coordinate
+		return "translate(" + arc.centroid(d) + ")";
+		})
+		.style("fill", "black")
+		.style("font", "bold 12px Arial")
+		.text(function(d) { return d.data.magnitude; });
+	//chart title
+	vis.append("text")
+		  .attr("x", canvasWidth*(-0.05))
+		  .attr("y", (canvasHeight)*(-0.49) )
+		  .attr("dy", "0.35em")
+		  .attr("text-anchor", "left")
+		  .attr("font-family", "sans-serif")
+		  .attr("font-size", "9px")
+		  .text("For second visulization, I choose pie chart to show the number of incidents happened in different PD districts. It clealy shows the difference between each PD district and is easy to find out that Southern district has  most incidents and Park district has fewest incidents. However since human beings are not sensitive about the area, people may misinterpret the number of incidents. -Lan Yu")
+		  .call(wrap, canvasWidth*1,canvasWidth*(-0.5));
+	//chart title
+	vis.append("text")
+		  .attr("x", canvasWidth*(-0.5))
+		  .attr("y", (canvasHeight)*(-0.38) )
+		  .attr("dy", "0.35em")
+		  .attr("text-anchor", "left")
+		  .attr("font-family", "sans-serif")
+		  .attr("font-size", "20px")
+		  .attr("font-weight", "bold")
+		  .attr("fill", "black")
+		  .text("Pd District vs. Number of incidents");
+
+
+	});
+	
+	
+    
+
+    // Computes the angle of an arc, converting from radians to degrees.
+function angle(d) {
+	var a = (d.startAngle + d.endAngle) * 90 / Math.PI - 90;
+	return a > 90 ? a - 180 : a;
+	}
+function wrap(text, width,left) {
+  text.each(function() {
+    var text = d3.select(this),
+        words = text.text().split(/\s+/).reverse(),
+        word,
+        line = [],
+        lineNumber = 0,
+        lineHeight = 1.5, // ems
+        y = text.attr("y"),
+        dy = parseFloat(text.attr("dy")),
+        tspan = text.text(null).append("tspan").attr("x",left).attr("y", y).attr("dy", dy + "em");
+    while (word = words.pop()) {
+      line.push(word);
+      tspan.text(line.join(" "));
+      if (tspan.node().getComputedTextLength() > width) {
+        line.pop();
+        tspan.text(line.join(" "));
+        line = [word];
+        tspan = text.append("tspan").attr("x",left).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
+      }
+    }
+  });
+}
+
+        
+    </script>
+  </body>
+</html>

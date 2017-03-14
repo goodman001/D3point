@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sheet1</title>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<style>
+	.axis {
+	  path {
+		fill: none;
+	  }
+	  .tick line {
+		stroke-width: 1;
+		stroke: rgba(0,0,0,0.1);
+	  }
+	  fill: white;
+	  font-size: 12px;
+	}
+</style>
+</head>
+<body>
+    <script type="text/javascript"> 
+	//set up canvas and bar sizes
+	var canvasWidth = 1200,
+		canvasHeight = 5000,
+		otherMargins = canvasWidth * 0.1,
+		leftMargin = canvasWidth * 0.12,
+		maxContentWidth = canvasWidth - leftMargin -otherMargins ,
+		maxChartHeight = canvasHeight - (otherMargins * 1.8);
+	//set up linear scale for data to fit on chart area 
+	var xScale = d3.scale.linear()
+		.range([0, maxContentWidth]);
+	//set up ordinal scale for x variables
+	var yScale = d3.scale.ordinal();
+	//add canvas to HTML
+	var chart = d3.select("body").append("svg")
+		.attr("width",canvasWidth)
+		.attr("height", canvasHeight);                       
+	//set up x axis                            
+	var xAxis = d3.svg.axis()
+		.scale(xScale)
+		.orient("top")
+		.ticks(6);
+	//set up y axis
+	var yAxis = d3.svg.axis()
+		.scale(yScale)
+		.orient("left")
+		.tickSize(7);
+	//add in data
+    d3.xhr("illiniFootballScores_streak.csv").get(function (error, response) { 
+		//retrieve data
+		var dirtyCSV = response.responseText;
+		console.log(dirtyCSV);
+		var cleanCSV = dirtyCSV.split('\n').slice(0).join('\n');
+		var data = d3.csv.parse(cleanCSV)
+		console.log(data);
+		//retrieve title
+		var dirtyTitle = dirtyCSV.split('\n').slice(0,1).join('\n');
+		var title = dirtyTitle.slice(0,-1);
+		//get variable names
+		var keys = d3.keys(data[0]);
+		var namesTitle = keys[3];
+		var valuesTitle = keys[0];
+		var wlTitle = keys[4];
+		var weightTitle = keys[10];
+		//accessing the properties of each object with the variable name through its key
+		var values = function(d) {return +d[valuesTitle];};
+		var names = function(d) {return d[namesTitle];}
+		//console.log(names);
+		// find highest value
+		var maxValue = 2014; 
+		//set y domain by mapping an array of the variables along x axis
+		yScale.domain(data.map(names));
+		//set x domain with max value and use .nice() to ensure the y axis is labelled above the max y value
+		xScale.domain([1892, maxValue]).nice(); 
+        //set bar width with rangeBands ([x axis width], gap between bars, gap before and after bars) as a proportion of bar width  
+        yScale.rangeBands([0, maxChartHeight], 0.1, 0.25);
+		//chart title
+		chart.append("text")
+			.attr("x", 10)
+			.attr("y", otherMargins*0.3 )
+			.attr("dy", "0.35em")
+			.attr("text-anchor", "left")
+			.attr("font-family", "sans-serif")
+			.attr("font-size", "50px")
+			.attr("font-weight", "bold")
+			.attr("fill", "black")
+			.text("Activity3 Statistics");
+        //append x axis
+        chart.append("g")
+			.attr("transform", "translate(" + leftMargin + ", " + otherMargins + ")")
+			.attr("text-anchor", "middle")
+			.attr("font-family", "sans-serif")
+			.attr("font-size", "10px")
+			.style("stroke", "black")
+			.style("fill", "none")
+			.style("stroke-width", 1)
+			.style("shape-rendering", "crispEdges")
+			.call(xAxis)
+			.selectAll("text")
+			.attr("stroke", "none")
+			.attr("fill", "black");
+        //append y axis
+        chart.append("g")
+			.attr("transform", "translate(" + leftMargin + ", " + otherMargins + ")")
+			.attr("text-anchor", "middle")
+			.attr("font-family", "sans-serif")
+			.attr("font-size", "10px")
+			.style("stroke", "black")
+			.style("fill", "none")
+			.style("stroke-width", 1)
+			.style("shape-rendering", "crispEdges")
+			.call(yAxis)
+			.selectAll("text")
+			//.attr("dx", "-1.15em")
+			.attr("stroke", "none")
+			.attr("fill", "black")
+         //x axis title        
+		chart.append("text")
+			.attr("x", (maxContentWidth / 2) + leftMargin)
+			.attr("y", otherMargins *(0.8))
+			.attr("text-anchor", "middle")
+			.attr("font-family", "sans-serif")
+			.attr("font-size", "20px")
+			.attr("font-weight", "bold")
+			.attr("fill", "black")
+			.text("Years");        
+        //chart border - not necessary used for reference for the edge of canvas
+        var border = chart.append("rect")
+			.attr("x", 0)
+			.attr("y", 0)
+			.attr("height", canvasHeight)
+			.attr("width", canvasWidth)
+			.style("stroke", "black")
+			.style("fill", "none")
+			.style("stroke-width", 2);
+        //console.log(yAxis);
+		chart.selectAll("circle")
+		   .data(data)
+		   .enter()
+		   .append("circle")
+		   .style("opacity",0.45)
+		   .attr("fill", function(d) {
+				if(d[wlTitle] == 'W')
+				{
+					return "#8A2BE2";
+				}else
+				{
+					return "#D2691E";
+				}
+				return xScale(d[valuesTitle])+leftMargin;
+		   })
+		   .attr("cx", function(d) {
+				return xScale(d[valuesTitle])+leftMargin;
+		   })
+		   .attr("cy", function(d) {
+				return yScale(d[namesTitle]) + otherMargins+ yScale.rangeBand()*0.5;
+		   })
+		   .attr("r", function(d) {
+				return (parseInt(d[weightTitle])+1)*2.3;//Math.sqrt(2)
+		   });
+
+      });
+    </script>
+  </body>
+</html>

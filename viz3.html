@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>viz3</title>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<style>
+	.axis {
+	  path {
+		fill: none;
+	  }
+	  .tick line {
+		stroke-width: 1;
+		stroke: rgba(0,0,0,0.1);
+	  }
+	  fill: white;
+	  font-size: 12px;
+	}
+</style>
+</head>
+<body>
+    <script type="text/javascript"> 
+	//set up canvas and bar sizes
+	var canvasWidth = 960,
+		canvasHeight = 500,
+		otherMargins = canvasWidth * 0.06,
+		leftMargin = canvasWidth * 0.22,
+		maxBarWidth = canvasWidth - leftMargin -otherMargins ,
+		maxChartHeight = canvasHeight - (otherMargins * 1.8);
+	//set up linear scale for data to fit on chart area 
+	var xScale = d3.scale.linear()
+		.range([0, maxBarWidth]);
+	//set up ordinal scale for x variables
+	var yScale = d3.scale.ordinal();
+	//add canvas to HTML
+	var chart = d3.select("body").append("svg")
+		.attr("width",canvasWidth)
+		.attr("height", canvasHeight);                       
+	//set up x axis                            
+	var xAxis = d3.svg.axis()
+		.scale(xScale)
+		.orient("bottom")
+		.ticks(7);
+	//set up y axis
+	var yAxis = d3.svg.axis()
+		.scale(yScale)
+		.orient("left")
+		.tickSize(0);
+	//add in data
+    d3.xhr("viz3.csv").get(function (error, response) { 
+		//retrieve data
+		var dirtyCSV = response.responseText;
+		console.log(dirtyCSV);
+		var cleanCSV = dirtyCSV.split('\n').slice(0).join('\n');
+		var data = d3.csv.parse(cleanCSV)
+		console.log(data);
+		//retrieve title
+		var dirtyTitle = dirtyCSV.split('\n').slice(0,1).join('\n');
+		var title = dirtyTitle.slice(0,-1);
+		//get variable names
+		var keys = d3.keys(data[0]);
+		var namesTitle = keys[0];
+		var valuesTitle = keys[1];
+		//accessing the properties of each object with the variable name through its key
+		var values = function(d) {return +d[valuesTitle];};
+		var names = function(d) {return d[namesTitle];}
+		//console.log(names);
+		// find highest value
+		var maxValue = d3.max(data, values); 
+		//set y domain by mapping an array of the variables along x axis
+		yScale.domain(data.map(names));
+		//set x domain with max value and use .nice() to ensure the y axis is labelled above the max y value
+		xScale.domain([0, maxValue]).nice(); 
+        //set bar width with rangeBands ([x axis width], gap between bars, gap before and after bars) as a proportion of bar width  
+        yScale.rangeBands([0, maxChartHeight], 0.1, 0.25);
+        //set up rectangle elements with attributes based on data
+        var rects = chart.selectAll("rect")
+			.data(data)
+			.enter()
+			.append("rect");
+        //set up attributes of svg rectangle elements based on attributes
+        var rectAttributes = rects
+			.attr("x", leftMargin)
+			.attr("y", function (d) {return yScale(d[namesTitle]) + otherMargins; })
+			.attr("width", function (d) {console.log(xScale(d[valuesTitle]));return xScale(d[valuesTitle])})
+			.attr("height", yScale.rangeBand())
+			.attr("fill", "orange")
+			;
+		
+        //chart title
+		chart.append("text")
+			.attr("x", canvasWidth * 0.4)
+			.attr("y", otherMargins*0.3 )
+			.attr("dy", "0.35em")
+			.attr("text-anchor", "left")
+			.attr("font-family", "sans-serif")
+			.attr("font-size", "9px")
+			.attr("fill", "black")
+			.text("Caption:For the third visulization, I choose bar chart since the difference between each category will be presented very clear by using lines. In order to show the max and min, I apply color features into the visulazation. -Lan Yu")
+			.call(wrap, canvasWidth*0.98,10);
+		//chart caption
+        chart.append("text")
+			.attr("x", 10)
+			.attr("y", otherMargins*0.8 )
+			.attr("dy", "0.35em")
+			.attr("text-anchor", "left")
+			.attr("font-family", "sans-serif")
+			.attr("font-size", "20px")
+			.attr("font-weight", "bold")
+			.attr("fill", "black")
+			.text("Catetory Statistics");
+        //append x axis
+        chart.append("g")
+			.attr("transform", "translate(" + leftMargin + ", " + (maxChartHeight + otherMargins) + ")")
+			.attr("text-anchor", "middle")
+			.attr("font-family", "sans-serif")
+			.attr("font-size", "10px")
+			.style("stroke", "black")
+			.style("fill", "none")
+			.style("stroke-width", 1)
+			.style("shape-rendering", "crispEdges")
+			.call(xAxis)
+			.selectAll("text")
+			.attr("stroke", "none")
+			.attr("fill", "black");
+        //append y axis
+        chart.append("g")
+			.attr("transform", "translate(" + leftMargin + ", " + otherMargins + ")")
+			.attr("text-anchor", "middle")
+			.attr("font-family", "sans-serif")
+			.attr("font-size", "10px")
+			.style("stroke", "black")
+			.style("fill", "none")
+			.style("stroke-width", 1)
+			.style("shape-rendering", "crispEdges")
+			.call(yAxis)
+			.selectAll("text")
+			//.attr("dx", "-1.15em")
+			.attr("stroke", "none")
+			.attr("fill", "black")
+         //x axis title        
+		chart.append("text")
+			.attr("x", (maxBarWidth / 2) + leftMargin)
+			.attr("y", canvasHeight - (otherMargins *0.1))
+			.attr("text-anchor", "middle")
+			.attr("font-family", "sans-serif")
+			.attr("font-size", "14px")
+			.attr("font-weight", "bold")
+			.attr("fill", "black")
+			.text("Total");        
+        //chart border - not necessary used for reference for the edge of canvas
+        var border = chart.append("rect")
+			.attr("x", 0)
+			.attr("y", 0)
+			.attr("height", canvasHeight)
+			.attr("width", canvasWidth)
+			.style("stroke", "black")
+			.style("fill", "none")
+			.style("stroke-width", 1);
+        //log anything in the console for debugging
+        //console.log(yAxis);
+		chart.append('g')
+			.selectAll('text')
+			.data(data)
+			.enter().append('text')
+			.classed('label', true)
+			.attr("x", function(d) {return xScale(d[valuesTitle])+leftMargin +15; })
+			.attr("y", function(d, i) { return yScale(d[namesTitle]) + otherMargins + yScale.rangeBand() -1;})
+			.attr("font-size", "9px")
+			.style("text-anchor", "middle")
+			.text(function(d) { return d[valuesTitle]; })
+      });
+//line wrap function adapted from "Wrapping Long Labels" - mike bostock
+function wrap(text, width,left) {
+  text.each(function() {
+    var text = d3.select(this),
+        words = text.text().split(/\s+/).reverse(),
+        word,
+        line = [],
+        lineNumber = 0,
+        lineHeight = 1.5, // ems
+        y = text.attr("y"),
+        dy = parseFloat(text.attr("dy")),
+        tspan = text.text(null).append("tspan").attr("x",left).attr("y", y).attr("dy", dy + "em");
+    while (word = words.pop()) {
+      line.push(word);
+      tspan.text(line.join(" "));
+      if (tspan.node().getComputedTextLength() > width) {
+        line.pop();
+        tspan.text(line.join(" "));
+        line = [word];
+        tspan = text.append("tspan").attr("x",left).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
+      }
+    }
+  });
+}
+    </script>
+  </body>
+</html>
