@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+
+<title>A game</title>
+<style type="text/css">
+#game_begin{
+	background-color:#efefef;
+	width:100px;
+	height:50px;
+}
+#game_help{
+	background-color:#efefef;
+	width:100px;
+	height:50px;
+}
+#game_pp{
+	background-color:#efefef;
+	width:100px;
+	height:50px;
+	display:none;
+}
+#game_pc{
+	background-color:#efefef;
+	width:100px;
+	height:50px;
+	display:none;
+}
+
+td{
+	background-color:#00ffff;
+	width:100px;
+	height:100px;
+	color:red;
+	text-align:center;
+	font-size:30px;
+  }
+</style>
+</head>
+<body>
+<table>
+<tr><td class="T1">-</td><td class="T2">-</td><td class="T3">-</td></tr>
+<tr><td class="T4">-</td><td class="T5">-</td><td class="T6">-</td></tr>
+<tr><td class="T7">-</td><td class="T8">-</td><td class="T9">-</td></tr>
+</table>
+
+<div id="game_begin">游戏开始</div>
+<div id="game_help">游戏帮助</div>
+<div id="game_pp">双人游戏</div>
+<div id="game_pc">人机对战</div>
+<script>
+/*	Player 类
+
+	成员变量:flag 玩家标志
+	
+	成员方法:do_PP()   人人对战.  玩家 下棋
+			 do_AI()   人机对战.  电脑 下棋
+			 do_PC()   人机对战.  玩家 下棋
+			 AI_find() 电脑选择下一步的位置
+			 AI_find_rc_blank(judge_sum)  寻找行列可能为3的空位    judge_sum:一行(列)数字的和  返回 位置大小
+			 AI_find_diagonal_blank(judge_sum)  寻找对角线可能为3的空位  judge_sum:对角线数字的和  返回 位置大小
+			 AI_find_a_blank()   返回一个空位
+			 is_return(num)		 num是否应该返回
+*/
+Player = new Object();
+Player.flag = 1;
+Player.do_PP = function(){
+	console.log("player do function is used");
+	
+	var td_lists = document.getElementsByTagName("td"); //为每个td添加事件
+	for(var td_l = 0;td_l<td_lists.length;td_l++){		//事件代表下棋
+		td_lists[td_l].onclick = function(e){
+			//下棋前  验证位置
+			if(Game.isGameOver()){	
+				Game.whoWin();
+				return;
+			}
+			console.log('class num: '+this.className+' text:'+this.innerText);
+			//获得row col
+			var this_num = this.className.substring(1);
+			console.log(this_num);
+			var row = Math.floor((this_num-1)/3);
+			var col = (this_num-1)%3;
+			//验证,此位置是否被占据
+			if(Game.chess[row][col] != 0){
+				alert('the blank is full');
+			}else{
+				//   更改 num 数量
+				Game.num%2!=0?Player.flag = 1:Player.flag =2;
+				Game.num--;
+				//   更改 chess数组
+				Game.chess[row][col] = Player.flag;
+				//   更新 tb 内容
+				this.innerText = Player.flag==1?'X':'O';
+			}
+			console.log(Game.chess);
+			//下棋后 验证是否获胜
+			if(Game.isGameOver()){
+				Game.whoWin();
+				return;
+			}
+		}
+	}
+	
+ };
+Player.do_AI = function(){
+	
+	//获取电脑所选位置     此位置为 tb块号  1~9
+	var AI_num = Player.AI_find();
+	console.log('AI_num='+AI_num);
+	var row = Math.floor((AI_num-1)/3);
+	var col = (AI_num-1)%3;
+	console.log('电脑选择的::row'+row+'  col'+col);
+	//   更改 num 数量
+	Game.num--;
+	//   更改 chess数组
+	Game.chess[row][col] = 3;
+	//   更新tb 内容
+	var td_lists = document.getElementsByTagName("td");
+	td_lists[AI_num-1].innerText ='C';
+	
+	//验证游戏是否结束
+	if(Game.isGameOver()){	
+		Game.isPlayerWin(3)?alert('电脑赢啦~'):alert('菜鸡互啄，平局');	 //电脑是否获胜，true 赢. false 平局。
+		return;
+	}
+	
+ }
+Player.do_PC = function(){
+	var td_lists = document.getElementsByTagName("td"); //为每个td添加事件
+	
+	//电脑默认第一步的位置
+	td_lists[4].innerText = 'C'
+	Game.chess[1][1] = 3;
+	Game.num--;
+	
+	for(var td_l = 0;td_l<td_lists.length;td_l++){		//事件代表下棋
+		td_lists[td_l].onclick = function(e){
+			//下棋前  验证位置
+			if(Game.isGameOver()){	
+				Game.whoWin();
+				return;
+			}
+			//获得row col
+			var this_num = this.className.substring(1);
+			var row = Math.floor((this_num-1)/3);
+			var col = (this_num-1)%3;
+			//验证,此位置是否被占据
+			if(Game.chess[row][col] != 0){
+				alert('the blank is full');
+			}else{
+				//   更改 num 数量
+				Player.flag = 1;
+				Game.num--;
+				//   更改 chess数组
+				Game.chess[row][col] = Player.flag;
+				console.log(Game.chess);
+				//   更新tb 内容
+				this.innerText ='X';
+			}
+			//下棋后 验证是否获胜
+			if(Game.isGameOver()){
+				Game.whoWin();
+				return;
+			}
+			Player.do_AI();
+		}
+	}
+}
+Player.AI_find_rc_blank=function(judge_sum){
+	var AI_num;
+	
+		for(var row = 0;row<3;row++){
+			var ai_sum = Game.chess[row][0]+Game.chess[row][1]+Game.chess[row][2];	//判断行 
+			console.log('ai_sum_row:'+row+' is : '+ ai_sum+'     6才进入判断');
+			if(ai_sum==judge_sum){
+				if(Game.chess[row][0]+Game.chess[row][1]==judge_sum){
+					return row*3+3;
+				}else{
+					Game.chess[row][0]==0?AI_num=(row*3+1):AI_num=(row*3+2);
+					return AI_num;
+				}
+			}
+		}
+	
+		for(var col = 0;col<3;col++){												//判断列
+			var ai_sum = Game.chess[0][col]+Game.chess[1][col]+Game.chess[2][col];	
+			console.log('ai_sum_col:'+col+' is : '+ ai_sum+'     6才进入判断');
+			if(ai_sum==judge_sum){
+				if(Game.chess[0][col]+Game.chess[1][col]==judge_sum){
+					return (7+col);
+				}else{
+					Game.chess[0][col]==0?AI_num=(col+1):AI_num=(col+4);
+					return AI_num;
+				}
+			}
+		}
+	
+	return -1;
+}
+Player.AI_find_diagonal_blank = function(judge_sum){
+	var AI_num;
+	if((Game.chess[0][0]+Game.chess[1][1]+Game.chess[2][2])==judge_sum){						//判断破对角线  \
+		console.log('ai_sum_ \对角线 is : '+ Game.chess[0][0]+Game.chess[1][1]+Game.chess[2][2]);
+		if(Game.chess[0][0]+Game.chess[1][1]==judge_sum){
+			return (9);
+		}else{
+			Game.chess[0][0]==0?AI_num=(1):AI_num=(5);
+			return AI_num;
+		}
+
+		return AI_num;
+	}
+	
+	if((Game.chess[2][0]+Game.chess[1][1]+Game.chess[0][2])==judge_sum){						//判断破对角线	/
+		console.log('ai_sum_ /对角线 is : '+ Game.chess[2][0]+Game.chess[1][1]+Game.chess[0][2]);
+		if(Game.chess[0][2]+Game.chess[1][1]==judge_sum){
+			return 7;
+		}else{
+			Game.chess[0][2]==0?AI_num=(3):AI_num=(5);
+			return AI_num;
+		}
+	}
+	return -1;
+}
+Player.AI_find_a_blank = function(){
+	for(var row = 0; row<3;row++){
+		for(var col =0;col<3;col++){
+			if(Game.chess[row][col]==0) return(row*3+col+1);
+		}
+	}
+}
+Player.is_return=function(num){
+	return(num!=-1);
+}
+Player.AI_find = function(){
+	var AI_num = -1;
+	var AI_SUM = 6;
+	var PL_SUM = 2;
+	//此处应该有一个算法     电脑选择走哪里  这是一个超级烂的算法..
+	//寻找自己三连子机会		
+	AI_num = Player.AI_find_rc_blank(AI_SUM);
+	if(Player.is_return(AI_num)) return AI_num;
+	
+	AI_num = Player.AI_find_diagonal_blank(AI_SUM);
+	console.log('AI_find_di:::::+'+AI_SUM);
+	if(Player.is_return(AI_num)) return AI_num;
+	
+	//寻找对方三连子机会。
+	AI_num = Player.AI_find_rc_blank(PL_SUM);	
+	if(Player.is_return(AI_num)) return AI_num;
+	
+	AI_num = Player.AI_find_diagonal_blank(AI_SUM);
+	if(Player.is_return(AI_num)) return AI_num;
+	
+	//寻找空位
+	return Player.AI_find_a_blank();
+ }
+ 
+/*******************************************************************************************************************
+********************************************************************************************************************/
+
+
+/* 	Game 类
+
+ 	成员变量:   num 剩余空位
+				chess 棋子二维数组		
+	成员方法:
+				init()         初始化
+				begin()        游戏开始
+				PP()           人人对战
+				PC() 		   人机对战
+				isGameOver()   游戏是否结束  1结束, 0 未结束
+				isPlayerWin(n) 判断玩家n是否获胜 获胜返回true
+				whoWin()	   判断哪位玩家获胜
+** 
+*/
+Game = new Object();						
+Game.num = 9;								//棋子剩余数量
+Game.chess =[[0,0,0],[0,0,0],[0,0,0]];		//游戏数组
+Game.init = function(){						//初始化,添加事件
+	//单机游戏开始事件
+	var div_game_begin = document.getElementById("game_begin");	
+	var div_game_pp = document.getElementById("game_pp");
+	var div_game_pc = document.getElementById("game_pc");
+
+	div_game_begin.onclick = function(e){
+	
+		//初始化数据
+		Game.num = 9;								//棋子剩余数量
+		Game.chess =[[0,0,0],[0,0,0],[0,0,0]];		//游戏数组
+		var td_lists = document.getElementsByTagName("td"); //为每个td添加事件
+		for(var td_l = 0;td_l<td_lists.length;td_l++){		
+			td_lists[td_l].innerText='-';
+		}
+	
+		console.log("游戏选择!");
+		//Game.begin(1);			//游戏开始
+		div_game_pp.style.display="block";
+		div_game_pc.style.display="block";
+	};
+	//选择游戏模式
+	div_game_pp.onclick = function(e){
+		Game.begin(2);
+		div_game_pp.style.display="none";
+		div_game_pc.style.display="none";
+		div_game_begin.innerText="重新开始";
+	}
+	div_game_pc.onclick = function(e){
+		Game.begin(1);
+		div_game_pp.style.display="none";
+		div_game_pc.style.display="none";
+		div_game_begin.innerText="重新开始";
+	}
+	
+	
+	
+}
+Game.begin = function(s){					//选择游戏模式  s==1 人人 ;s=0 人机 人机暂时不实现
+	s==2?this.PP():this.PC();
+};
+Game.PP = function(){						//人人对战开始
+	console.log('选择双人游戏');
+	Player.do_PP();
+};
+Game.PC = function(){						//人机对战开始
+	console.log('选择人机游戏');
+	Player.do_PC();
+};
+Game.isGameOver = function(){				//游戏结束
+	
+	
+	for(var i=0;i<3;i++){					//横竖验证
+		if(this.chess[0][i]!=0&&this.chess[0][i]==this.chess[1][i]&&this.chess[0][i]==this.chess[2][i]) {return true;}
+		if(this.chess[i][0]!=0&&this.chess[i][0]==this.chess[i][1]&&this.chess[i][0]==this.chess[i][2]) {return true;}
+	}										//对角线验证
+	if(this.chess[1][1]!=0&&this.chess[0][0]==this.chess[1][1]&&this.chess[1][1]==this.chess[2][2]) {return true;}
+	if(this.chess[1][1]!=0&&this.chess[0][2]==this.chess[1][1]&&this.chess[1][1]==this.chess[2][0]) {return true;}
+	
+	if(this.num==0) {return true;}			//平局情况 , 在双方都不赢
+	
+	return false;
+}
+Game.isPlayerWin = function(s){				
+	for(var i=0;i<3;i++){					//横竖验证
+		if(this.chess[0][i]==s&&this.chess[0][i]==this.chess[1][i]&&this.chess[0][i]==this.chess[2][i]) {return true;}
+		if(this.chess[i][0]==s&&this.chess[i][0]==this.chess[i][1]&&this.chess[i][0]==this.chess[i][2]) {return true;}
+	}										//对角线验证
+	if(this.chess[1][1]==s&&this.chess[0][0]==this.chess[1][1]&&this.chess[1][1]==this.chess[2][2]) {return true;}
+	if(this.chess[1][1]==s&&this.chess[0][2]==this.chess[1][1]&&this.chess[1][1]==this.chess[2][0]) {return true;}
+	return false;
+}
+Game.whoWin = function(){					//判断哪个玩家赢  1,2代表玩家  3代表电脑
+	if(Game.isPlayerWin(1)) {alert('玩家1获胜');return;}
+	if(Game.isPlayerWin(2)) {alert('玩家2获胜');return;}
+	if(Game.isPlayerWin(3)) {alert('菜鸡，输给电脑，电脑获胜');return;}
+	alert('菜鸡互啄.平局');
+}
+
+/*调用初始化函数*/
+Game.init();
+
+</script>
+
+</body>
+
+
+
+
+</html>
