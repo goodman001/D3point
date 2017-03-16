@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8">
+<link rel="stylesheet" href="radar-chart.css">
+<head>
+  <style>
+    body {
+      padding: 20px;
+    }
+    .radar-chart .area {
+      fill-opacity: 0.7;
+    }
+    .radar-chart.focus .area {
+      fill-opacity: 0.3;
+    }
+    .radar-chart.focus .area.focused {
+      fill-opacity: 0.9;
+    }
+    .area.germany, .germany .circle {
+      fill: #FFD700;
+      stroke: none;
+    }
+    .area.argentina, .argentina .circle {
+      fill: #ADD8E6;
+      stroke: none;
+    }
+  </style>
+
+  <script type="text/javascript" src="http://d3js.org/d3.v3.js"></script>
+  <script type="text/javascript" src="radar-chart.js"></script>
+  </head>
+  <body>
+    <h1>Radar Chart</h1>
+	<script type="text/javascript">
+
+	  function showRadar(){
+		var data = [];
+		var chart = RadarChart.chart();
+		var c = 'Call_Type_Group,NE,NW,SE,SW,TI\nAlarm,2808,834,1983,1129,49\nFire,206,178,206,160,5\nNon Life-threatening,2533,755,2266,1021,39\nPotentially Life-Threatening,5450,1540,4608,1900,85';
+		var w = 600;
+		var h = 600;
+		csv = c.split("\n").map(function(i){return i.split(",")})
+		headers = []
+		csv.forEach(function(item, i){
+			if(i==0){
+			  headers = item;
+			}else{
+			  newSeries = {};
+			  item.forEach( function(v, j){
+				if(j==0){
+				  newSeries.className = v;
+				  newSeries.axes = [];
+				}else{
+				  newSeries.axes.push({"axis":[headers[j]], "value": parseFloat(v)});
+				}
+			  });
+			  data.push(newSeries);
+			}
+		})
+		RadarChart.defaultConfig.radius = 3;
+		RadarChart.defaultConfig.w = w;
+		RadarChart.defaultConfig.h = h;
+		RadarChart.draw("#chart-container", data,450,500,"Call_Type_Group");
+
+
+
+	};
+	  window.onload = showRadar;
+	</script>
+<div id="chart-container"></div>
+</body>
+</html>
