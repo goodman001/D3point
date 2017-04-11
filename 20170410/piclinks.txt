@@ -1,5 +1,0 @@
-https://github.com/usf-cs360-2017/lectures/wiki/Homework-3
-这个网站上有resource可以参考 https://github.com/usf-cs360-2017/lectures/wiki/Geospatial-Data
-这个作业是在Non-Proportional Symbol Map 和Proportional Symbol Map和Choropleth Map这三种technique里面选一种
-lyu27@dons.usfca.edu
-Whxnylg1994
