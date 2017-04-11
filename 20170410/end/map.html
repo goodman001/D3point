@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<head>
+<meta charset="utf-8">
+<link href="style.css" rel="stylesheet" type="text/css">
+<title>SF Arrests</title>
+</head>
+
+<body>
+<div class="topmenu">
+<h1>Choropleth graph</h1>
+Select Case Status:
+<select name="" id="sel">
+	<option value="total">All status</option>
+	<option value="open">Open status</option>
+	<option value="close">Close status</option>
+</select>
+</div>
+<svg width="960" height="800"></svg>
+
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+<script src="script.js"></script>
+</body>
