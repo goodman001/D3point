@@ -40,7 +40,7 @@ function starts(filename){
 	var color = d3.scaleThreshold()
     	//.domain(d3.range(2, 10))
 		.domain([2,4,6,8,10,12,14,16,18])
-    	.range(d3.schemeCategory20);
+    	.range(d3.schemeOranges[9]);
 	var div = d3.select("body").append("div")   
 		.attr("class", "labeltip")               
 		.style("opacity", 0); 
@@ -130,8 +130,8 @@ function starts(filename){
 			div.transition().duration(300)
 			.style("opacity", 1)
 			div.text(d.properties.supervisor+" " + d.properties.supname +  " : " + d.rate + "%")
-			.style("left", (coords[0]) + "px")
-			.style("top", (coords[1]) + "px");
+			.style("left", (d3.event.pageX) + "px")
+			.style("top", (d3.event.pageY -30) + "px");
 		})
 		.on("mouseout", function(d) {
 			d3.select(this)
